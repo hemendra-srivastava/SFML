@@ -41,7 +41,12 @@ namespace
 namespace sf
 {
 ////////////////////////////////////////////////////////////
+Window::NoContextType Window::NoContext;
+
+
+////////////////////////////////////////////////////////////
 Window::Window() :
+m_glResource    (new GlResourceHandle),
 m_impl          (NULL),
 m_context       (NULL),
 m_frameTimeLimit(Time::Zero),
@@ -53,6 +58,7 @@ m_size          (0, 0)
 
 ////////////////////////////////////////////////////////////
 Window::Window(VideoMode mode, const String& title, Uint32 style, const ContextSettings& settings) :
+m_glResource    (new GlResourceHandle),
 m_impl          (NULL),
 m_context       (NULL),
 m_frameTimeLimit(Time::Zero),
@@ -63,7 +69,20 @@ m_size          (0, 0)
 
 
 ////////////////////////////////////////////////////////////
+Window::Window(VideoMode mode, const String& title, Uint32 style, Window::NoContextType) :
+m_glResource    (NULL),
+m_impl          (NULL),
+m_context       (NULL),
+m_frameTimeLimit(Time::Zero),
+m_size          (0, 0)
+{
+    create(mode, title, style, NoContext);
+}
+
+
+////////////////////////////////////////////////////////////
 Window::Window(WindowHandle handle, const ContextSettings& settings) :
+m_glResource    (new GlResourceHandle),
 m_impl          (NULL),
 m_context       (NULL),
 m_frameTimeLimit(Time::Zero),
@@ -74,9 +93,23 @@ m_size          (0, 0)
 
 
 ////////////////////////////////////////////////////////////
+Window::Window(WindowHandle handle, Window::NoContextType) :
+m_glResource    (NULL),
+m_impl          (NULL),
+m_context       (NULL),
+m_frameTimeLimit(Time::Zero),
+m_size          (0, 0)
+{
+    create(handle, NoContext);
+}
+
+
+////////////////////////////////////////////////////////////
 Window::~Window()
 {
     close();
+
+    delete m_glResource;
 }
 
 
@@ -85,6 +118,9 @@ void Window::create(VideoMode mode, const String& title, Uint32 style, const Con
 {
     // Destroy the previous window implementation
     close();
+
+    delete m_glResource;
+    m_glResource = new GlResourceHandle;
 
     // Fullscreen style requires some tests
     if (style & Style::Fullscreen)
@@ -132,16 +168,87 @@ void Window::create(VideoMode mode, const String& title, Uint32 style, const Con
 
 
 ////////////////////////////////////////////////////////////
+void Window::create(VideoMode mode, const String& title, Uint32 style, Window::NoContextType)
+{
+    // Destroy the previous window implementation
+    close();
+
+    delete m_glResource;
+    m_glResource = NULL;
+
+    // Fullscreen style requires some tests
+    if (style & Style::Fullscreen)
+    {
+        // Make sure there's not already a fullscreen window (only one is allowed)
+        if (fullscreenWindow)
+        {
+            err() << "Creating two fullscreen windows is not allowed, switching to windowed mode" << std::endl;
+            style &= ~Style::Fullscreen;
+        }
+        else
+        {
+            // Make sure that the chosen video mode is compatible
+            if (!mode.isValid())
+            {
+                err() << "The requested video mode is not available, switching to a valid mode" << std::endl;
+                mode = VideoMode::getFullscreenModes()[0];
+            }
+
+            // Update the fullscreen window
+            fullscreenWindow = this;
+        }
+    }
+
+    // Check validity of style according to the underlying platform
+#if defined(SFML_SYSTEM_IOS) || defined(SFML_SYSTEM_ANDROID)
+    if (style & Style::Fullscreen)
+        style &= ~Style::Titlebar;
+    else
+        style |= Style::Titlebar;
+#else
+    if ((style & Style::Close) || (style & Style::Resize))
+        style |= Style::Titlebar;
+#endif
+
+    // Recreate the window implementation, we pass 0xFFFFFFFF as the attributeFlags value to indicate no context
+    m_impl = priv::WindowImpl::create(mode, title, style, ContextSettings(0, 0, 0, 0, 0, 0xFFFFFFFF, false));
+
+    // Perform common initializations
+    initialize();
+}
+
+
+////////////////////////////////////////////////////////////
 void Window::create(WindowHandle handle, const ContextSettings& settings)
 {
     // Destroy the previous window implementation
     close();
+
+    delete m_glResource;
+    m_glResource = new GlResourceHandle;
 
     // Recreate the window implementation
     m_impl = priv::WindowImpl::create(handle);
 
     // Recreate the context
     m_context = priv::GlContext::create(settings, m_impl, VideoMode::getDesktopMode().bitsPerPixel);
+
+    // Perform common initializations
+    initialize();
+}
+
+
+////////////////////////////////////////////////////////////
+void Window::create(WindowHandle handle, Window::NoContextType)
+{
+    // Destroy the previous window implementation
+    close();
+
+    delete m_glResource;
+    m_glResource = NULL;
+
+    // Recreate the window implementation
+    m_impl = priv::WindowImpl::create(handle);
 
     // Perform common initializations
     initialize();

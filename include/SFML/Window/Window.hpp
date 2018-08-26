@@ -55,9 +55,33 @@ class Event;
 /// \brief Window that serves as a target for OpenGL rendering
 ///
 ////////////////////////////////////////////////////////////
-class SFML_WINDOW_API Window : GlResource, NonCopyable
+class SFML_WINDOW_API Window : NonCopyable
 {
 public:
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Special type that can be passed to Window() or
+    ///        Window::create() that inhibits creation of an
+    ///        OpenGL context
+    ///
+    /// \see Window(VideoMode, const String&, Uint32 style, NoContextType)
+    /// \see Window(WindowHandle, NoContextType)
+    /// \see create(VideoMode, const String&, Uint32, NoContextType)
+    /// \see create(WindowHandle, NoContextType)
+    ///
+    ////////////////////////////////////////////////////////////
+    struct NoContextType {};
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Inhibits the creation of an OpenGL context
+    ///
+    /// \see Window(VideoMode, const String&, Uint32 style, NoContextType)
+    /// \see Window(WindowHandle, NoContextType)
+    /// \see create(VideoMode, const String&, Uint32, NoContextType)
+    /// \see create(WindowHandle, NoContextType)
+    ///
+    ////////////////////////////////////////////////////////////
+    static NoContextType NoContext;
 
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor
@@ -90,6 +114,25 @@ public:
     Window(VideoMode mode, const String& title, Uint32 style = Style::Default, const ContextSettings& settings = ContextSettings());
 
     ////////////////////////////////////////////////////////////
+    /// \brief Construct a new window without an OpenGL context
+    ///
+    /// This constructor creates the window with the size and pixel
+    /// depth defined in \a mode. An optional style can be passed to
+    /// customize the look and behavior of the window (borders,
+    /// title bar, resizable, closable, ...). If \a style contains
+    /// Style::Fullscreen, then \a mode must be a valid video mode.
+    ///
+    /// An OpenGL context will not be created by the window. Use this
+    /// if you want to use another API to do your rendering.
+    ///
+    /// \param mode  Video mode to use (defines the width, height and depth of the rendering area of the window)
+    /// \param title Title of the window
+    /// \param style %Window style, a bitwise OR combination of sf::Style enumerators
+    ///
+    ////////////////////////////////////////////////////////////
+    Window(VideoMode mode, const String& title, Uint32 style, NoContextType);
+
+    ////////////////////////////////////////////////////////////
     /// \brief Construct the window from an existing control
     ///
     /// Use this constructor if you want to create an OpenGL
@@ -104,6 +147,20 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     explicit Window(WindowHandle handle, const ContextSettings& settings = ContextSettings());
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Construct the window without an OpenGL context from an existing control
+    ///
+    /// Use this constructor if you want to create an OpenGL
+    /// rendering area into an already existing control.
+    ///
+    /// An OpenGL context will not be created by the window. Use this
+    /// if you want to use another API to do your rendering.
+    ///
+    /// \param handle Platform-specific handle of the control
+    ///
+    ////////////////////////////////////////////////////////////
+    explicit Window(WindowHandle handle, NoContextType);
 
     ////////////////////////////////////////////////////////////
     /// \brief Destructor
@@ -133,6 +190,23 @@ public:
     void create(VideoMode mode, const String& title, Uint32 style = Style::Default, const ContextSettings& settings = ContextSettings());
 
     ////////////////////////////////////////////////////////////
+    /// \brief Create (or recreate) the window without an OpenGL context
+    ///
+    /// If the window was already created, it closes it first.
+    /// If \a style contains Style::Fullscreen, then \a mode
+    /// must be a valid video mode.
+    ///
+    /// An OpenGL context will not be created by the window. Use this
+    /// if you want to use another API to do your rendering.
+    ///
+    /// \param mode  Video mode to use (defines the width, height and depth of the rendering area of the window)
+    /// \param title Title of the window
+    /// \param style %Window style, a bitwise OR combination of sf::Style enumerators
+    ///
+    ////////////////////////////////////////////////////////////
+    void create(VideoMode mode, const String& title, Uint32 style, NoContextType);
+
+    ////////////////////////////////////////////////////////////
     /// \brief Create (or recreate) the window from an existing control
     ///
     /// Use this function if you want to create an OpenGL
@@ -148,6 +222,21 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     void create(WindowHandle handle, const ContextSettings& settings = ContextSettings());
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Create (or recreate) the window without an OpenGL context from an existing control
+    ///
+    /// Use this function if you want to create an OpenGL
+    /// rendering area into an already existing control.
+    /// If the window was already created, it closes it first.
+    ///
+    /// An OpenGL context will not be created by the window. Use this
+    /// if you want to use another API to do your rendering.
+    ///
+    /// \param handle Platform-specific handle of the control
+    ///
+    ////////////////////////////////////////////////////////////
+    void create(WindowHandle handle, NoContextType);
 
     ////////////////////////////////////////////////////////////
     /// \brief Close the window and destroy all the attached resources
@@ -180,6 +269,9 @@ public:
     /// passed to the constructor or the create() function,
     /// if one or more settings were not supported. In this case,
     /// SFML chose the closest match.
+    ///
+    /// If the window was created without an OpenGL context,
+    /// the returned settings will have no meaning.
     ///
     /// \return Structure containing the OpenGL context settings
     ///
@@ -540,8 +632,18 @@ private:
     void initialize();
 
     ////////////////////////////////////////////////////////////
+    /// \brief Structure used to ensure global OpenGL context
+    ///        initialization is performed if necessary
+    ///
+    ////////////////////////////////////////////////////////////
+    struct GlResourceHandle : GlResource
+    {
+    };
+
+    ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
+    GlResourceHandle* m_glResource;     ///< GlResourceHandle object to ensure global OpenGL context initialization is performed if necessary
     priv::WindowImpl* m_impl;           ///< Platform-specific implementation of the window
     priv::GlContext*  m_context;        ///< Platform-specific implementation of the OpenGL context
     Clock             m_clock;          ///< Clock for measuring the elapsed time between frames
@@ -580,6 +682,12 @@ private:
 /// OpenGL context attached to the window, with the sf::ContextSettings
 /// structure which is passed as an optional argument when creating the
 /// window.
+///
+/// If you want to create an sf::Window without an OpenGL context,
+/// e.g. in order to use it for rendering with another API such as
+/// Direct3D, you can inhibit creation of an OpenGL context by
+/// passing sf::Window::NoContext instead of an sf::ContextSettings
+/// structure.
 ///
 /// On dual-graphics systems consisting of a low-power integrated GPU
 /// and a powerful discrete GPU, the driver picks which GPU will run an
