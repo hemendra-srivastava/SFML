@@ -50,7 +50,7 @@ namespace priv
 ////////////////////////////////////////////////////////////
 AudioDevice::AudioDevice()
 {
-    setOutputDevice("");
+    //setOutputDevice("");
 }
 
 
