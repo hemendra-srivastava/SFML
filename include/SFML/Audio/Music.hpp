@@ -48,6 +48,11 @@ class InputStream;
 class SFML_AUDIO_API Music : public SoundStream
 {
 public:
+    ////////////////////////////////////////////////////////////
+    static std::vector<std::string> getAvailableOutputDevices();
+
+    /////////////////////////////////////////////////////////////
+    static void setOutputDevice(const std::string& name);
 
     ////////////////////////////////////////////////////////////
     /// \brief Structure defining a time range using the template type

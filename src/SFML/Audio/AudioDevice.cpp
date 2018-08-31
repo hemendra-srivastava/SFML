@@ -30,7 +30,7 @@
 #include <SFML/Audio/Listener.hpp>
 #include <SFML/System/Err.hpp>
 #include <memory>
-
+#include <cstring>
 
 namespace
 {
@@ -50,8 +50,38 @@ namespace priv
 ////////////////////////////////////////////////////////////
 AudioDevice::AudioDevice()
 {
-    // Create the device
-    audioDevice = alcOpenDevice(NULL);
+    setOutputDevice("");
+}
+
+
+////////////////////////////////////////////////////////////
+AudioDevice::~AudioDevice()
+{
+    // Destroy the context
+    alcMakeContextCurrent(NULL);
+    if (audioContext)
+        alcDestroyContext(audioContext);
+
+    // Destroy the device
+    if (audioDevice)
+        alcCloseDevice(audioDevice);
+}
+
+////////////////////////////////////////////////////////////
+void AudioDevice::setOutputDevice(const std::string& name)
+{
+    alcMakeContextCurrent(NULL);
+    if (audioContext)
+        alcDestroyContext(audioContext);
+
+    // Destroy the device
+    if (audioDevice)
+        alcCloseDevice(audioDevice);
+
+    if (name.empty())
+	audioDevice = alcOpenDevice(NULL);
+    else
+	audioDevice = alcOpenDevice(name.c_str());
 
     if (audioDevice)
     {
@@ -85,21 +115,23 @@ AudioDevice::AudioDevice()
     }
 }
 
-
 ////////////////////////////////////////////////////////////
-AudioDevice::~AudioDevice()
+std::vector<std::string> AudioDevice::getAvailableOutputDevices()
 {
-    // Destroy the context
-    alcMakeContextCurrent(NULL);
-    if (audioContext)
-        alcDestroyContext(audioContext);
+    std::vector<std::string> deviceNameList;
 
-    // Destroy the device
-    if (audioDevice)
-        alcCloseDevice(audioDevice);
+    const ALchar* deviceList = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+    if (deviceList)
+    {
+        while (*deviceList)
+        {
+            deviceNameList.push_back(deviceList);
+            deviceList += std::strlen(deviceList) + 1;
+        }
+    }
+
+    return deviceNameList;    
 }
-
-
 ////////////////////////////////////////////////////////////
 bool AudioDevice::isExtensionSupported(const std::string& extension)
 {

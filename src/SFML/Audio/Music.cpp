@@ -26,6 +26,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/Music.hpp>
+#include <SFML/Audio/AudioDevice.hpp>
 #include <SFML/Audio/ALCheck.hpp>
 #include <SFML/System/Lock.hpp>
 #include <SFML/System/Err.hpp>
@@ -50,6 +51,15 @@ Music::~Music()
     stop();
 }
 
+    ///////////////////////////////////////////////////////    
+std::vector<std::string> Music::getAvailableOutputDevices() {
+    return priv::AudioDevice::getAvailableOutputDevices();
+}
+
+void Music::setOutputDevice(const std::string& name) {
+
+    priv::AudioDevice::setOutputDevice(name);
+}
 
 ////////////////////////////////////////////////////////////
 bool Music::openFromFile(const std::string& filename)

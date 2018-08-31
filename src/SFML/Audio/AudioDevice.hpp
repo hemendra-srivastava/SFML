@@ -31,7 +31,8 @@
 #include <SFML/System/Vector3.hpp>
 #include <set>
 #include <string>
-
+#include <vector>
+#include <cstring>
 
 namespace sf
 {
@@ -59,6 +60,20 @@ public:
     ////////////////////////////////////////////////////////////
     ~AudioDevice();
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Get a list of the names of all available audio devices
+    ///
+    /// This function returns a vector of strings, containing
+    /// the names of all available audio capture devices.
+    ///
+    /// \return A vector of strings containing the names
+    ///
+    ////////////////////////////////////////////////////////////
+    static std::vector<std::string> getAvailableOutputDevices();
+
+    /////////////////////////////////////////////////////////////
+    static void setOutputDevice(const std::string& name);
+    
     ////////////////////////////////////////////////////////////
     /// \brief Check if an OpenAL extension is supported
     ///
@@ -182,6 +197,9 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     static Vector3f getUpVector();
+    //private:
+
+    //std::string        m_deviceName;         ///< Name of the device
 };
 
 } // namespace priv
